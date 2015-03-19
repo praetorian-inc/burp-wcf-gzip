@@ -135,7 +135,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
             s = gzip.GzipFile(mode="rb", fileobj=buf)
             content = s.read(len(stringContent))
             return content
-        except as e:
+        except Exception as e:
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
         #self.extender.stdout.println(output)
         return None
@@ -149,7 +149,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
             s.close()
             gzipContent = s.read(len(stringContent))
             return gzipContent
-        except as e:
+        except Exception as e:
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
         #self.extender.stdout.println(output)
         return None

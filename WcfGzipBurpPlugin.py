@@ -132,7 +132,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
         try:
             buf = StringIO(stringContent)
             s = gzip.GzipFile(mode="rb", fileobj=buf)
-            content = s.read(len(stringContent))
+            content = s.read()
             return content
         except Exception as e:
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
@@ -146,7 +146,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
             s = gzip.GzipFile(mode="wb", fileobj=buf)
             s.write(stringContent)
             s.close()
-            gzipContent = s.read(len(stringContent))
+            gzipContent = s.read()
             return gzipContent
         except Exception as e:
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))

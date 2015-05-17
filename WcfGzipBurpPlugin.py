@@ -150,7 +150,7 @@ class GzipHelperTab(IMessageEditorTab):
         return None
 
     def setMessage(self, content, isRequest):
-        output = self.decompress(self.decodeWCF(self.body))
+        output = self.decodeWCF(self.decompress(self.body))
         self.extender.stdout.println(output)
         self.txtInput.setText(self.getPrettyXML(output))
         return

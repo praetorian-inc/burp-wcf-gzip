@@ -22,11 +22,11 @@ from cStringIO import StringIO
 
 class BurpExtender(IBurpExtender, IMessageEditorTabFactory):
     def registerExtenderCallbacks(self, callbacks):
-        self.callbacks=callbacks
+        self.callbacks = callbacks
         self.stdout = PrintWriter(callbacks.getStdout(), True)
         self.stderr = PrintWriter(callbacks.getStderr(), True)
         self.helpers = callbacks.getHelpers()
-        callbacks.setExtensionName("WCF Gzip Helper")
+        callbacks.setExtensionName("WCF Gzip-Binary Helper")
         callbacks.registerMessageEditorTabFactory(self)
         return
 

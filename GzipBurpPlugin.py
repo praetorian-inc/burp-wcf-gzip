@@ -6,14 +6,14 @@ Created on Mon May 17
 Majority of this code is modeled from https://gist.github.com/sekhmetn/4420532
 """
 
+import sys
+import gzip
+from cStringIO import StringIO
+
 from burp import IBurpExtender
 from burp import IMessageEditorTabFactory
 from burp import IMessageEditorTab
 from java.io import PrintWriter
-from xml.dom import minidom
-import sys
-import gzip
-from cStringIO import StringIO
 
 
 class BurpExtender(IBurpExtender, IMessageEditorTabFactory):

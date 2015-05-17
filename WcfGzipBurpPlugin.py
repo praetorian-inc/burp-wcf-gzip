@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon March 16
+Created on Mon May 17
 
 @author: Anthony Marquez
-Majority of this code is borrowed from https://gist.github.com/sekhmetn/4420532
-It is also fully dependent on having NBFS.exe from his plugin in the same directory as Burp.
+Majority of this code is modeled from https://gist.github.com/sekhmetn/4420532
 """
+
+import base64
+import gzip
+import subprocess
+import sys
+from cStringIO import StringIO
+from xml.dom import minidom
+from subprocess import CalledProcessError
 
 from burp import IBurpExtender
 from burp import IMessageEditorTabFactory
 from burp import IMessageEditorTab
 from java.io import PrintWriter
-from xml.dom import minidom
-import subprocess
-import base64
-from subprocess import CalledProcessError
-import sys
-import gzip
-from cStringIO import StringIO
 
 
 class BurpExtender(IBurpExtender, IMessageEditorTabFactory):
@@ -26,15 +26,15 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory):
         self.stdout = PrintWriter(callbacks.getStdout(), True)
         self.stderr = PrintWriter(callbacks.getStderr(), True)
         self.helpers = callbacks.getHelpers()
-        callbacks.setExtensionName("WCF Gzip-Binary Helper")
+        callbacks.setExtensionName("Gzip Helper")
         callbacks.registerMessageEditorTabFactory(self)
         return
 
     def createNewInstance(self, controller, editable):
-        return WCFGzipHelperTab(self, controller, editable)
+        return GzipHelperTab(self, controller, editable)
 
 
-class WCFGzipHelperTab(IMessageEditorTab):
+class GzipHelperTab(IMessageEditorTab):
     def __init__(self, extender, controller, editable):
         self.extender = extender
         self.editable = editable
@@ -49,7 +49,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
         return
 
     def getTabCaption(self):
-        return "WCF Gzip Helper"
+        return "Gzip Helper"
 
     def getUiComponent(self):
         return self.txtInput.getComponent()
@@ -66,7 +66,7 @@ class WCFGzipHelperTab(IMessageEditorTab):
         return None
 
     def isEnabled(self, content, isRequest):
-        #Content-Type: application/msbin1
+        #Content-Type: application/x-gzip
         self.content = content
         request_or_response_info = None
         if isRequest:
@@ -86,36 +86,58 @@ class WCFGzipHelperTab(IMessageEditorTab):
 
         return False
 
-    def getPrettyXML(self, xmldata):
+    def getPrettyXML(self,xmldata):
         try:
             return minidom.parseString(xmldata).toprettyxml(encoding="utf-8")
         except:
             return xmldata
 
-    def decodeWCF(self, base64EncodedBody):
+    def decompress(self, stringContent):
         try:
-            #NBFS.exe must be in the same directory as Burp
-            proc = subprocess.Popen(['NBFS.exe', 'decode', base64EncodedBody], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            #proc.wait()
-            output = proc.stdout.read()
-            self.extender.stdout.println(output)
+            buf = StringIO(stringContent)
+            s = gzip.GzipFile(mode="r", fileobj=buf)
+            content = s.read()
+            return content
+        except Exception as e:
+            self.extender.stdout.println("error({0}): {1}".format(type(e), str(e)))
+        return None
+
+    def compress(self, content):
+        stringContent = self.extender.helpers.bytesToString(content)
+        try:
+            buf = StringIO()
+            s = gzip.GzipFile(mode="wb", fileobj=buf)
+            s.write(stringContent)
+            s.close()
+            gzipContent = buf.getvalue()
+            return gzipContent
+        except Exception as e:
+            self.extender.stdout.println("error({0}): {1}".format(type(e), str(e)))
+        return None
+
+    def decodeWCF(self, binaryString):
+        b64_wcfbinary_string = base64.b64encode(binaryString)
+        try:
+            # NBFS.exe must be in the same directory as Burp
+            proc = subprocess.Popen(['NBFS.exe', 'decode', b64_wcfbinary_string], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            b64_out_string = proc.stdout.read()
+            self.extender.stdout.println(b64_out_string)
             self.extender.stdout.println(proc.stderr.read())
+            output = base64.b64decode(b64_out_string)
             return output
 
         except CalledProcessError, e:
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
         except:
             self.extender.stdout.println("Unexpected error: %s: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
-        #self.extender.stdout.println(output)
         return None
 
-    def encodeWCF(self, xmlContent):
-        xmlStringContent = self.extender.helpers.bytesToString(xmlContent)
+    def encodeWCF(self, body):
+        xmlStringContent = self.extender.helpers.bytesToString(body)
         base64EncodedXML = base64.b64encode(xmlStringContent.replace("\n", '').replace("\t", ''))
         try:
-            #NBFS.exe must be in the same directory as Burp
+            # NBFS.exe must be in the same directory as Burp
             proc = subprocess.Popen(['NBFS.exe', 'encode', base64EncodedXML], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            #proc.wait()
             output = proc.stdout.read()
             self.extender.stdout.println(output)
             self.extender.stdout.println(proc.stderr.read())
@@ -125,46 +147,17 @@ class WCFGzipHelperTab(IMessageEditorTab):
             self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
         except:
             self.extender.stdout.println("Unexpected error: %s: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1], sys.exc_info()[2]))
-        #self.extender.stdout.println(output)
-        return None
-
-    def decompressWCF(self, stringContent):
-        try:
-            buf = StringIO(stringContent)
-            s = gzip.GzipFile(mode="rb", fileobj=buf)
-            content = s.read()
-            return content
-        except Exception as e:
-            self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
-        #self.extender.stdout.println(output)
-        return None
-
-    def compressWCF(self, content):
-        stringContent = self.extender.helpers.bytesToString(content)
-        try:
-            buf = StringIO()
-            s = gzip.GzipFile(mode="wb", fileobj=buf)
-            s.write(stringContent)
-            s.close()
-            gzipContent = s.read()
-            return gzipContent
-        except Exception as e:
-            self.extender.stdout.println("error({0}): {1}".format(e.errno, e.strerror))
-        #self.extender.stdout.println(output)
         return None
 
     def setMessage(self, content, isRequest):
-        output = self.decompressWCF(self.body)
-        base64encoded_wcfbinary_data = base64.b64encode(output)
-        self.extender.stdout.println(base64encoded_wcfbinary_data)
-        output1 = self.decodeWCF(base64encoded_wcfbinary_data)
-        output2 = base64.b64decode(output1)
-        self.txtInput.setText(self.getPrettyXML(output2))
+        output = self.decompress(self.decodeWCF(self.body))
+        self.extender.stdout.println(output)
+        self.txtInput.setText(self.getPrettyXML(output))
         return
 
     def getMessage(self):
         if self.txtInput.isTextModified():
-            encodedText = self.encodeWCF(self.txtInput.getText())
-            return self.extender.helpers.buildHttpMessage(self.httpHeaders, self.compressWCF(encodedText))
+            encoded_txt = self.encodeWCF(self.txtInput.getText())
+            return self.extender.helpers.buildHttpMessage(self.httpHeaders, self.compress(encoded_txt))
         else:
             return self.content

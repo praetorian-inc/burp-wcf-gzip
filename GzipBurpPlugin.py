@@ -3,6 +3,10 @@
 Created on Mon May 17
 
 @author: Anthony Marquez
+
+Burp Plugin to uncompress traffic that has a content type of 'gzip'. Built to catch some traffic that Burp's built-in
+gzip decompression feature was not identifying as 'gzip' compressed traffic.
+
 Majority of this code is modeled from https://gist.github.com/sekhmetn/4420532
 """
 

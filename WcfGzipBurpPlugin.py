@@ -3,7 +3,10 @@
 Created on Mon May 17
 
 @author: Anthony Marquez
-Majority of this code is modeled from https://gist.github.com/sekhmetn/4420532
+
+Burp Plugin to decode WCF binary traffic that is compressed using the 'gzip' algorithm. This is essentially an extension
+ of the prior WCF decoding plugin code to include 'gzip' compressed communication. Code is based on plugin seen here:
+ https://gist.github.com/sekhmetn/4420532
 """
 
 import base64

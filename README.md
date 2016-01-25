@@ -1,5 +1,10 @@
 # burp-wcf-gzip
 
+## Author
+
+Written by Anthony Marquez ([@BoogeyMarquez](https://twitter.com/boogeymarquez))
+
+## Description
 
 A couple of burp extensions that I created during a couple of security assessments, and I figure I would share them with others to save some pain.
 
